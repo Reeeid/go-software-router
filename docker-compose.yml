@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  router:
+    # 1. 自分で作った Dockerfile を使ってビルドする指定
+    build: .
+    # 2. ビルドしたイメージに名前をつける（管理しやすくなります）
+    image: my-go-router-image:latest
+    # 3. ルーター開発に必須：コンテナにホスト並みの権限を与える
+    privileged: true
+    # 4. ホスト（WSL）のファイルをコンテナと同期（コードを書き換えたら即反映）
+    volumes:
+      - .:/app
+    # 5. コンテナがすぐに終了しないように「中に入れる状態」を維持する
+    tty: true
+    stdin_open: true
+    # 6. コンテナ起動時の初期位置
+    working_dir: /app
