@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 )
 
@@ -28,6 +29,33 @@ type ipHeader struct {
 	headerChecksum uint16 //ヘッダのチェックサム
 	srcAddr        uint32 //送信元IPアドレス
 	destAddr       uint32 //送信先IPアドレス
+}
+
+func (ipheader ipHeader) ToPacket(calc bool) (ipHeaderByte []byte) {
+	var b bytes.Buffer
+
+	b.Write([]byte{ipheader.version<<4 + ipheader.headerLen})
+	b.Write([]byte{ipheader.tos})
+	b.Write(uint16ToByte(ipheader.totalLen))
+	b.Write(uint16ToByte(ipheader.identity))
+	b.Write(uint16ToByte(ipheader.flagOffset))
+	b.Write([]byte{ipheader.ttl})
+	b.Write([]byte{ipheader.protocol})
+	b.Write(uint16ToByte(ipheader.headerChecksum))
+	b.Write(uint32ToByte(ipheader.srcAddr))
+	b.Write(uint32ToByte(ipheader.destAddr))
+
+	//checksumを計算する
+	if calc {
+		ipHeaderByte = b.Bytes()
+		checksum := calcChecksum(ipHeaderByte)
+		//checksumをセット
+		ipHeaderByte[10] = checksum[0]
+		ipHeaderByte[11] = checksum[1]
+	} else {
+		ipHeaderByte = b.Bytes()
+	}
+	return ipHeaderByte
 }
 
 // IPパケットの受信処理
@@ -89,4 +117,28 @@ func ipInputToOurs(inputdev *netDevice, ipheader *ipHeader, packet []byte) {
 		fmt.Printf("Unhandled ip protocol number : %d\n", ipheader.protocol)
 		return
 	}
+}
+
+func ipPacketEncapsulateOutput(inputdev *netDevice, destAddr, srcAddr uint32, payload []byte, protocolType uint8) {
+	var ipPacket []byte
+	//IPヘッダで必要なIPパケットの全長を算出する
+	//IPヘッダの20byte + パケットの長さ
+	totalLengh := 20 + len(payload)
+
+	//IPヘッダの各項目を設定
+	ipHeader := ipHeader{
+		version:        4,
+		headerLen:      20 / 4,
+		tos:            0,
+		totalLen:       uint16(totalLengh),
+		identity:       0xf80c,
+		flagOffset:     2 << 13,
+		ttl:            0x40,
+		protocol:       protocolType,
+		headerChecksum: 0, // checksum計算をする前は0をセット
+		srcAddr:        srcAddr,
+		destAddr:       destAddr,
+	}
+	// IPヘッダをbyteにする
+	ipPacket = append(ipPacket, ipHeader.ToPacket(true)...)
 }
