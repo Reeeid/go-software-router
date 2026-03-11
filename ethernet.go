@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"log"
-	"syscall"
 )
 
 const ETHER_TYPE_IP uint16 = 0x0800
@@ -23,7 +22,7 @@ func (ethHeader ethernetHeader) ToPacket() []byte {
 	var b bytes.Buffer
 	b.Write(macToByte(ethHeader.destAddr))
 	b.Write(macToByte(ethHeader.srcAddr))
-	b.Write(Uint16ToByte(ethHeader.etherType))
+	b.Write(uint16ToByte(ethHeader.etherType))
 	return b.Bytes()
 }
 
@@ -57,10 +56,7 @@ func ethernetInput(netdev *netDevice, packet []byte) {
 	//イーサタイプの値から上位プロトコルを特定する
 	switch netdev.etheHeader.etherType {
 	case ETHER_TYPE_ARP:
-		err := arpInput(netdev, packet[14:])
-		if err != nil {
-			log.Println(err)
-		}
+		arpInput(netdev, packet[14:])
 	case ETHER_TYPE_IP:
 		ipInput(netdev, packet[14:])
 	}
@@ -78,17 +74,8 @@ func ethernetOutput(netdev *netDevice, destaddr [6]uint8, packet []byte, ethType
 	//イーサネットヘッダに送信するパケットをつなげる
 	ethHeaderPacket = append(ethHeaderPacket, packet...)
 	//ネットワークデバイスに送信する
-	err := netDeviceTransmit(ethHeaderPacket)
+	err := netdev.netDeviceTransmit(ethHeaderPacket)
 	if err != nil {
 		log.Fatalf("netDeviceTransmit is err : %v", err)
 	}
-}
-
-// ネットデバイスの送信処理
-func (netdev netDevice) netDeviceTransmit(data []byte) error {
-	err := syscall.Sendto(netdev.socket, data, 0, &netdev.sockaddr)
-	if err != nil {
-		return err
-	}
-	return nil
 }

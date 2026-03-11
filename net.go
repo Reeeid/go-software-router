@@ -16,6 +16,15 @@ type netDevice struct {
 	ipdev      ipDevice                  //IPプロトコル用
 }
 
+// ネットデバイスの送信処理
+func (netdev netDevice) netDeviceTransmit(data []byte) error {
+	err := syscall.Sendto(netdev.socket, data, 0, &netdev.sockaddr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func isIgnoreInterfaces(name string) bool {
 	for _, ignore := range IGNORE_INTERFACES {
 		if name == ignore {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 )
 
@@ -102,10 +101,10 @@ func searchArpTableEntry(ipaddr uint32) ([6]uint8, *netDevice) {
 	return [6]uint8{}, nil
 }
 
-func arpInput(netdev *netDevice, packet []byte) error {
+func arpInput(netdev *netDevice, packet []byte) {
 	//ARPパケットが規定より短かったら
 	if len(packet) < 28 {
-		return errors.New("received ARP Packet is too short")
+		println("received ARP Packet is too short")
 	}
 	//構造体にセット
 	arpMsg := arpIPToEthernet{
@@ -123,11 +122,10 @@ func arpInput(netdev *netDevice, packet []byte) error {
 	case ETHER_TYPE_IP:
 		if arpMsg.hardwareLen != ETHERNET_ADDRES_LEN {
 			fmt.Printf("Illegal hardware address length")
-			return nil
+
 		}
 		if arpMsg.protocolLen != IP_ADDRESS_LEN {
 			fmt.Println("Illegal protocol address length")
-			return nil
 		}
 		//オペレーションコードによって分岐
 		if arpMsg.opcode == ARP_OPERATION_CODE_REQUEST {
@@ -145,8 +143,29 @@ func arpInput(netdev *netDevice, packet []byte) error {
 func arpReplyArrives(netdev *netDevice, arp arpIPToEthernet) {
 	//IPアドレスが設定されているデバイスからの受信だったら
 	if netdev.ipdev.address != 00000000 {
-		fmt.Printf("Added arp table entry by arp reply (%s => %s)\n", printIPaddr(arp.senderIPAddr), printMacAddr(arp.senderHardwareAddr))
+		fmt.Printf("Added arp table entry by arp reply (%s => %s)\n", printIPAddr(arp.senderIPAddr), printMacAddr(arp.senderHardwareAddr))
 		//ARPテーブルエントリの追加
 		addArpTableEntry(netdev, arp.senderIPAddr, arp.senderHardwareAddr)
+	}
+}
+
+func arpRequestArrives(netdev *netDevice, arp arpIPToEthernet) {
+	//IPアドレスが設定されているデバイスからの受信勝要求されているアドレスが自分のものだったら
+	if netdev.ipdev.address != 00000000 && netdev.ipdev.address == arp.targetIPAddr {
+		fmt.Printf("Sending arp reply via %s\n", printIPAddr(arp.targetIPAddr))
+		//ARPリプライのパケットを作成
+		arpPacket := arpIPToEthernet{
+			hardwareType:       ARP_HTYPE_ETHERNET,
+			protocolType:       ETHER_TYPE_ARP,
+			hardwareLen:        ETHERNET_ADDRES_LEN,
+			protocolLen:        IP_ADDRESS_LEN,
+			opcode:             ARP_OPERATION_CODE_REPLY,
+			senderHardwareAddr: netdev.macaddr,
+			senderIPAddr:       netdev.ipdev.address,
+			targetHardwareAddr: arp.senderHardwareAddr,
+			targetIPAddr:       arp.targetIPAddr,
+		}.ToPacket()
+		//Ethernetでカプセル化して送信
+		ethernetOutput(netdev, arp.senderHardwareAddr, arpPacket, ETHER_TYPE_ARP)
 	}
 }
