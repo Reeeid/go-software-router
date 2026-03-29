@@ -109,9 +109,10 @@ func ipInputToOurs(inputdev *netDevice, ipheader *ipHeader, packet []byte) {
 		fmt.Println("ICMP received!")
 		//icmpInput(inputdev, ipheader.srcAddr, ipheader.destAddr, packet)
 	case IP_PROTOCOL_NUM_UDP:
-		fmt.Println("udp received : %x\n", packet)
-		//return
+		fmt.Printf("udp received : %x\n", packet)
+		return
 	case IP_PROTOCOL_NUM_TCP:
+		fmt.Printf("tcp received : %x\n", packet)
 		return
 	default:
 		fmt.Printf("Unhandled ip protocol number : %d\n", ipheader.protocol)

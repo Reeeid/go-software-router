@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     libpcap-dev \
     ethtool \
+    arping \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. コンテナ内の作業ディレクトリを設定
