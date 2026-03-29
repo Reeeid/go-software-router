@@ -61,17 +61,17 @@ func runChapter2(mode string) {
 			//if err != nil {
 			//	log.Fatalf("set non block is err : %s", err)
 			//}
-			// netaddrs, err := netif.Addrs() // TODO: 実装後にコメントアウト解除
-			// if err != nil {
-			// 	log.Fatalf("get ip addr from nic interface is err : %s", err)
-			// }
+			netaddrs, err := netif.Addrs() // TODO: 実装後にコメントアウト解除
+			if err != nil {
+				log.Fatalf("get ip addr from nic interface is err : %s", err)
+			}
 
 			netdev := netDevice{
 				name:     netif.Name,
 				macaddr:  setMacAddr(netif.HardwareAddr),
 				socket:   sock,
 				sockaddr: addr,
-				// ipdev: getIPdevice(netaddrs), // TODO: 実装後にコメントアウト解除
+				ipdev:    getIPdevice(netaddrs), // TODO: 実装後にコメントアウト解除
 			}
 
 			// 直接接続ネットワークの経路をルートテーブルのエントリに設定

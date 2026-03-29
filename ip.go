@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"net"
+	"strings"
 )
 
 const IP_ADDRESS_LEN = 4
@@ -107,7 +109,7 @@ func ipInputToOurs(inputdev *netDevice, ipheader *ipHeader, packet []byte) {
 	switch ipheader.protocol {
 	case IP_PROTOCOL_NUM_ICMP:
 		fmt.Println("ICMP received!")
-		//icmpInput(inputdev, ipheader.srcAddr, ipheader.destAddr, packet)
+		icmpInput(inputdev, ipheader.srcAddr, ipheader.destAddr, packet)
 	case IP_PROTOCOL_NUM_UDP:
 		fmt.Printf("udp received : %x\n", packet)
 		return
@@ -142,4 +144,31 @@ func ipPacketEncapsulateOutput(inputdev *netDevice, destAddr, srcAddr uint32, pa
 	}
 	// IPヘッダをbyteにする
 	ipPacket = append(ipPacket, ipHeader.ToPacket(true)...)
+	//IPヘッダにペイロードをつなげる
+	ipPacket = append(ipPacket, payload...)
+	//ルートテーブルを参照して送信先MACアドレスを特定する
+	//なければARPリクエストを送信してMACアドレスを特定してから、ethernetOutputでパケットを送信する
+	destMacAddr, _ := searchArpTableEntry(destAddr)
+	if destMacAddr != [6]uint8{0, 0, 0, 0, 0, 0} {
+		//ルートテーブルに送信するIPアドレスのMACアドレスがあれば送信
+		ethernetOutput(inputdev, destMacAddr, ipPacket, ETHER_TYPE_IP)
+	} else {
+		//ARPリクエストを出す
+		sendARPRequest(inputdev, destAddr)
+	}
+}
+
+func getIPdevice(addrs []net.Addr) (ipdev ipDevice) {
+	for _, addr := range addrs {
+		// ipv6ではなくipv4アドレスをリターン
+		ipaddrstr := addr.String()
+		if !strings.Contains(ipaddrstr, ":") && strings.Contains(ipaddrstr, ".") {
+			ip, ipnet, _ := net.ParseCIDR(ipaddrstr)
+			ipdev.address = byteToUint32(ip.To4())
+			ipdev.netmask = byteToUint32(ipnet.Mask)
+			// ブロードキャストアドレスの計算はIPアドレスとサブネットマスクのbit反転の2進数「OR（論理和）」演算
+			ipdev.broadcast = ipdev.address | (^ipdev.netmask)
+		}
+	}
+	return ipdev
 }
