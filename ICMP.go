@@ -68,6 +68,7 @@ func icmpInput(inputdev *netDevice, sourceAddr, destAddr uint32, icmpPacket []by
 	if len(icmpPacket) < 4 {
 		fmt.Println("Received ICMP packet is too short")
 	}
+	fmt.Printf("ICMP received on device: %s\n", inputdev.name)
 	//ICMPのパケットとして解釈する
 	icmpmsg := icmpMessage{
 		icmpHeader: icmpHeader{

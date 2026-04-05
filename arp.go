@@ -152,6 +152,7 @@ func arpReplyArrives(netdev *netDevice, arp arpIPToEthernet) {
 func arpRequestArrives(netdev *netDevice, arp arpIPToEthernet) {
 	//IPアドレスが設定されているデバイスからの受信勝要求されているアドレスが自分のものだったら
 	if netdev.ipdev.address != 00000000 && netdev.ipdev.address == arp.targetIPAddr {
+		addArpTableEntry(netdev, arp.senderIPAddr, arp.senderHardwareAddr)
 		fmt.Printf("Sending arp reply via %s\n", printIPAddr(arp.targetIPAddr))
 		//ARPリプライのパケットを作成
 		arpPacket := arpIPToEthernet{
