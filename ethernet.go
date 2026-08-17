@@ -48,7 +48,7 @@ func ethernetInput(netdev *netDevice, packet []byte) {
 	netdev.etheHeader.etherType = byteToUint16(packet[12:14])
 
 	//自分のMACアドレス宛かブロードキャストの通信化を確認する
-	if netdev.macaddr != netdev.etheHeader.destAddr || netdev.etheHeader.srcAddr == [6]uint8{} || netdev.etheHeader.destAddr != ETHERNET_ADDRESS_BROADCAST {
+	if netdev.macaddr != netdev.etheHeader.destAddr && netdev.etheHeader.destAddr != ETHERNET_ADDRESS_BROADCAST || netdev.etheHeader.srcAddr == [6]uint8{} {
 		//自分のMACアドレス宛かブロードキャストでなければreturnする
 		return
 	}

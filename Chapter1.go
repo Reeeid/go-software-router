@@ -12,7 +12,7 @@ func runChapter1() {
 
 	events := make([]syscall.EpollEvent, 10)
 
-	// epoll作成（パケットが届いたら教えてねっていう監視用の奴）
+	// epoll作成（複数のネットワークインターフェースを効率的に監視するため）
 	epfd, err := syscall.EpollCreate1(0)
 	if err != nil {
 		log.Fatalf("epoll create error : %s", err)
@@ -21,7 +21,7 @@ func runChapter1() {
 	interfaces, _ := net.Interfaces()
 
 	for _, netif := range interfaces {
-		//無視するインターフェイスか確認（loとかdockerとか）
+		//無視するインターフェイスか確認（lo等）
 		if !isIgnoreInterfaces(netif.Name) {
 			//socketを開く
 			sock, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, int(htons(syscall.ETH_P_ALL)))

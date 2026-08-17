@@ -27,11 +27,8 @@ func uint32ToByte(i uint32) []byte {
 }
 
 func calcChecksum(packet []byte) []byte {
-	//まず16ビット毎に足す
 	sum := sumByteArr(packet)
-	//あふれた桁を足す
 	sum = (sum & 0xffff) + sum>>16
-	//論理否定を取った値をbyteにして返す
 	return uint16ToByte(uint16(sum ^ 0xffff))
 }
 

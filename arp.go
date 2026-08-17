@@ -64,6 +64,7 @@ func (arpmsg arpIPToEthernet) ToPacket() []byte {
 	b.Write(uint16ToByte(arpmsg.protocolType))
 	b.Write([]byte{arpmsg.hardwareLen})
 	b.Write([]byte{arpmsg.protocolLen})
+	b.Write(uint16ToByte(arpmsg.opcode))
 	b.Write(macToByte(arpmsg.senderHardwareAddr))
 	b.Write(uint32ToByte(arpmsg.senderIPAddr))
 	b.Write(macToByte(arpmsg.targetHardwareAddr))
@@ -80,6 +81,7 @@ func sendARPRequest(netdev *netDevice, targetip uint32) {
 		protocolType:       ETHER_TYPE_IP,
 		hardwareLen:        ETHERNET_ADDRES_LEN,
 		protocolLen:        IP_ADDRESS_LEN,
+		opcode:             ARP_OPERATION_CODE_REQUEST,
 		senderHardwareAddr: netdev.macaddr,
 		senderIPAddr:       netdev.ipdev.address,
 		targetHardwareAddr: ETHERNET_ADDRESS_BROADCAST,
@@ -157,7 +159,7 @@ func arpRequestArrives(netdev *netDevice, arp arpIPToEthernet) {
 		//ARPリプライのパケットを作成
 		arpPacket := arpIPToEthernet{
 			hardwareType:       ARP_HTYPE_ETHERNET,
-			protocolType:       ETHER_TYPE_ARP,
+			protocolType:       ETHER_TYPE_IP,
 			hardwareLen:        ETHERNET_ADDRES_LEN,
 			protocolLen:        IP_ADDRESS_LEN,
 			opcode:             ARP_OPERATION_CODE_REPLY,

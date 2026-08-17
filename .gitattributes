@@ -1,0 +1,3 @@
+# シェルスクリプトはLinux上で実行するので必ずLF改行を維持する
+# (core.autocrlf=true でもこの指定が優先される)
+*.sh text eol=lf
