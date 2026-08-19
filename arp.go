@@ -20,24 +20,15 @@ type arpTableEntry struct {
 
 // ARPテーブルのエントリ追加と更新
 func addArpTableEntry(netdev *netDevice, ipaddr uint32, macaddr [6]uint8) {
-	//既存のARPテーブルの更新が必要か確認する
-	if len(ArpTableEntryList) != 0 {
-		for _, arpTable := range ArpTableEntryList {
-			//IPは同じだがMACが違う場合は更新
-			if arpTable.ipAddr == ipaddr && arpTable.macAddr != macaddr {
-				arpTable.macAddr = macaddr
-			}
-			//MACは同じだがIPが変わった場合は更新
-			if arpTable.ipAddr != ipaddr && arpTable.macAddr == macaddr {
-				arpTable.ipAddr = ipaddr
-			}
-			//すでにある場合はreturn
-			if arpTable.ipAddr == ipaddr && arpTable.macAddr == macaddr {
-				return
-			}
+	//同じIPのエントリがあればMACとデバイスを上書きする
+	for i := range ArpTableEntryList {
+		if ArpTableEntryList[i].ipAddr == ipaddr {
+			ArpTableEntryList[i].macAddr = macaddr
+			ArpTableEntryList[i].netdev = netdev
+			return
 		}
 	}
-
+	//無ければ追加する
 	ArpTableEntryList = append(ArpTableEntryList, arpTableEntry{
 		macAddr: macaddr,
 		ipAddr:  ipaddr,

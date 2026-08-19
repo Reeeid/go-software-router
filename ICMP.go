@@ -91,7 +91,7 @@ func icmpInput(inputdev *netDevice, sourceAddr, destAddr uint32, icmpPacket []by
 	case ICMP_TYPE_ECHO_REQUEST:
 		//ICMPエコーリクエストの返信を作成して送信する
 		fmt.Println("ICMP ECHO REQUEST is received, Create ECHO REPLY Packet")
-		ipPacketEncapsulateOutput(inputdev, sourceAddr, destAddr, icmpmsg.ReplyPacket(), IP_PROTOCOL_NUM_ICMP)
+		ipPacketEncapsulateOutput(sourceAddr, destAddr, icmpmsg.ReplyPacket(), IP_PROTOCOL_NUM_ICMP)
 	}
 }
 func (icmpmsg *icmpMessage) ParsePacket(icmppacket []byte) icmpMessage {

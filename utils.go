@@ -28,7 +28,9 @@ func uint32ToByte(i uint32) []byte {
 
 func calcChecksum(packet []byte) []byte {
 	sum := sumByteArr(packet)
-	sum = (sum & 0xffff) + sum>>16
+	for sum>>16 != 0 {
+		sum = (sum & 0xffff) + sum>>16
+	}
 	return uint16ToByte(uint16(sum ^ 0xffff))
 }
 

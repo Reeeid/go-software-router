@@ -99,7 +99,9 @@ func runChapter2(mode string) {
 	for {
 		// epoll_waitでパケットの受信を待つ
 		nfds, err := syscall.EpollWait(epfd, events, -1)
-		if err != nil {
+		if err == syscall.EINTR {
+			continue
+		} else if err != nil {
 			log.Fatalf("epoll wait err : %s", err)
 		}
 		for i := 0; i < nfds; i++ {
