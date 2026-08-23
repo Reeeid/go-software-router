@@ -85,10 +85,24 @@ func ipInput(inputdev *netDevice, packet []byte) {
 		srcAddr:        byteToUint32(packet[12:16]),
 		destAddr:       byteToUint32(packet[16:20]),
 	}
+
+	//ヘッダ長とトータルの長さからペイロードのオフセットを計算する
+	headerLen := int(ipheader.headerLen) * 4
+	if ipheader.headerLen < 5 || len(packet) < headerLen {
+		fmt.Printf("headerLen is wrong: %s\n", packet)
+		return
+	}
+	totalLen := int(ipheader.totalLen)
+	if totalLen < headerLen || totalLen > len(packet) {
+		fmt.Printf("totalLen is wrong: %s\n", packet)
+		return
+	}
+	payload := packet[headerLen:totalLen]
+
 	//宛先アドレスがブロードキャストアドレスが受信したNICインターフェイスのIPアドレス
 	if ipheader.destAddr == IP_ADDRESS_LIMITED_BROADCAST || inputdev.ipdev.address == ipheader.destAddr {
 		//自分宛の通信として処理
-		ipInputToOurs(inputdev, &ipheader, packet[20:])
+		ipInputToOurs(inputdev, &ipheader, payload)
 		return
 	}
 
