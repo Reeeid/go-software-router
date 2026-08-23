@@ -74,7 +74,7 @@ func ipInput(inputdev *netDevice, packet []byte) {
 	//受信したIPパケットをipHeader構造体にセットする
 	ipheader := ipHeader{
 		version:        packet[0] >> 4,
-		headerLen:      packet[0] << 5 >> 5,
+		headerLen:      packet[0] & 0x0f,
 		tos:            packet[1],
 		totalLen:       byteToUint16(packet[2:4]),
 		identity:       byteToUint16(packet[4:6]),
