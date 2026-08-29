@@ -34,13 +34,30 @@ func calcChecksum(packet []byte) []byte {
 	return uint16ToByte(uint16(sum ^ 0xffff))
 }
 
+func foldChecksum(sum uint) uint16 {
+	for sum>>16 != 0 {
+		sum = (sum & 0xffff) + sum>>16
+	}
+	return uint16(sum ^ 0xffff)
+}
+
+// 合計する
 func sumByteArr(packet []byte) (sum uint) {
-	for i, _ := range packet {
+	for i := range packet {
 		if i%2 == 0 {
 			sum += uint(byteToUint16(packet[i:]))
 		}
 	}
+	if len(packet)%2 == 1 {
+		sum += uint(packet[len(packet)-1]) << 8
+	}
 	return sum
+}
+
+func pseudoHeaderSum(srcAddr, destAddr uint32, protocol uint8, l4Len int) uint {
+	return uint(srcAddr>>16) + uint(srcAddr&0xffff) +
+		uint(destAddr>>16) + uint(destAddr&0xffff) +
+		uint(protocol) + uint(l4Len)
 }
 
 func printMacAddr(macaddr [6]uint8) string {

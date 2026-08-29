@@ -42,6 +42,11 @@ func macToByte(macAddrByte [6]uint8) (b []byte) {
 //イーサネットの受信処理
 
 func ethernetInput(netdev *netDevice, packet []byte) {
+
+	//14バイト未満のヘッダをチェックする
+	if len(packet) < 14 {
+		return
+	}
 	//送られてきた通信をイーサネットのフレームとして解釈する
 	netdev.etheHeader.destAddr = setMacAddr(packet[0:6])
 	netdev.etheHeader.srcAddr = setMacAddr(packet[6:12])

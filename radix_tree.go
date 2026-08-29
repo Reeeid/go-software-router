@@ -9,19 +9,6 @@ type radixTreeNode struct {
 	value  int
 }
 
-type ipRouteType int
-
-const (
-	connected ipRouteType = iota
-	network
-)
-
-type ipRouteEntry struct {
-	iptype  ipRouteType
-	netdev  *netDevice
-	nexthop uint32
-}
-
 func (node *radixTreeNode) radixTreeAdd(prefixIpAddr, prefixLen uint32, entryData ipRouteEntry) {
 	//ルートノードから辿る
 	current := node

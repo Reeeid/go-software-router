@@ -98,6 +98,7 @@ func arpInput(netdev *netDevice, packet []byte) {
 	//ARPパケットが規定より短かったら
 	if len(packet) < 28 {
 		println("received ARP Packet is too short")
+		return
 	}
 	//構造体にセット
 	arpMsg := arpIPToEthernet{

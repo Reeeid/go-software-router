@@ -56,7 +56,7 @@ func (icmpMsg icmpMessage) ReplyPacket() (icmpPacket []byte) {
 
 	icmpPacket = b.Bytes()
 	//ICMPヘッダのチェックサムを計算して書き込む
-	checksum := calcChecksum(icmpPacket)
+	checksum := uint16ToByte(foldChecksum(sumByteArr(icmpPacket)))
 	//計算したチェックサムをセットする
 	icmpPacket[2] = checksum[0]
 	icmpPacket[3] = checksum[1]
