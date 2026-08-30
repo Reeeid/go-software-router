@@ -72,7 +72,7 @@ func (entry *natEntryList) createNatEntry(protoType natProtocolType) *natEntry {
 		for i, v := range entry.udp {
 			if v == nil {
 				entry.udp[i] = &natEntry{
-					globalPort: uint16(i),
+					globalPort: uint16(NAT_GLOBAL_PORT_MIN + i),
 				}
 				return entry.udp[i]
 			}
@@ -82,7 +82,7 @@ func (entry *natEntryList) createNatEntry(protoType natProtocolType) *natEntry {
 		for i, v := range entry.tcp {
 			if v == nil {
 				entry.tcp[i] = &natEntry{
-					globalPort: uint16(i),
+					globalPort: uint16(NAT_GLOBAL_PORT_MIN + i),
 				}
 				return entry.tcp[i]
 			}

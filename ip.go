@@ -47,7 +47,7 @@ type ipHeader struct {
 	destAddr       uint32 //送信先IPアドレス
 }
 
-func (ipheader ipHeader) ToPacket(calc bool) (ipHeaderByte []byte) {
+func (ipheader *ipHeader) ToPacket(calc bool) (ipHeaderByte []byte) {
 	var b bytes.Buffer
 
 	b.Write([]byte{ipheader.version<<4 + ipheader.headerLen})
@@ -64,10 +64,11 @@ func (ipheader ipHeader) ToPacket(calc bool) (ipHeaderByte []byte) {
 	//checksumを計算する
 	if calc {
 		ipHeaderByte = b.Bytes()
-		checksum := uint16ToByte(foldChecksum(sumByteArr(ipHeaderByte)))
+		ipHeaderByte[10], ipHeaderByte[11] = 0, 0
+		cksum := foldChecksum(sumByteArr(ipHeaderByte))
 		//checksumをセット
-		ipHeaderByte[10] = checksum[0]
-		ipHeaderByte[11] = checksum[1]
+		copy(ipHeaderByte[10:12], uint16ToByte(cksum))
+		ipheader.headerChecksum = cksum
 	} else {
 		ipHeaderByte = b.Bytes()
 	}
@@ -144,19 +145,19 @@ func ipInput(inputdev *netDevice, packet []byte) {
 		var err error
 		switch ipheader.protocol {
 		case IP_PROTOCOL_NUM_UDP:
-			natPacket, err = natExec(&ipheader, natPacketHeader{packet: packet[20:]}, inputdev.ipdev.natdev, udp, outgoing)
+			natPacket, err = natExec(&ipheader, natPacketHeader{packet: payload}, inputdev.ipdev.natdev, udp, outgoing)
 			if err != nil {
 				fmt.Printf("nat udp packet err is %s\n", err)
 				return
 			}
 		case IP_PROTOCOL_NUM_TCP:
-			natPacket, err = natExec(&ipheader, natPacketHeader{packet: packet[20:]}, inputdev.ipdev.natdev, tcp, outgoing)
+			natPacket, err = natExec(&ipheader, natPacketHeader{packet: payload}, inputdev.ipdev.natdev, tcp, outgoing)
 			if err != nil {
 				fmt.Printf("nat tcp packet err is %s\n", err)
 				return
 			}
 		case IP_PROTOCOL_NUM_ICMP:
-			natPacket, err = natExec(&ipheader, natPacketHeader{packet: packet[20:]}, inputdev.ipdev.natdev, icmp, outgoing)
+			natPacket, err = natExec(&ipheader, natPacketHeader{packet: payload}, inputdev.ipdev.natdev, icmp, outgoing)
 			if err != nil {
 				fmt.Printf("nat icmp packet err is %s\n", err)
 				return
@@ -177,16 +178,12 @@ func ipInput(inputdev *netDevice, packet []byte) {
 	}
 	//TTLを減らす
 	ipheader.ttl -= 1
-	// IPヘッダチェックサムの再計算
-	ipheader.headerChecksum = 0
-	ipheader.headerChecksum = foldChecksum(sumByteArr(ipheader.ToPacket(true)))
-
 	//bufferにコピー
 	forwardPacket := ipheader.ToPacket(true)
 	if inputdev.ipdev.natdev != (natDevice{}) {
 		forwardPacket = append(forwardPacket, natPacket...)
 	} else {
-		forwardPacket = append(forwardPacket, packet[20:]...)
+		forwardPacket = append(forwardPacket, payload...)
 	}
 	// 直接接続のネットワーク経路の場合
 	if route.iptype == connected {
@@ -242,26 +239,31 @@ func ipInputToOurs(inputdev *netDevice, ipheader *ipHeader, packet []byte) {
 			var err error
 			switch ipheader.protocol {
 			case IP_PROTOCOL_NUM_UDP:
-				destPacket, err = natExec(ipheader, natPacketHeader{packet: packet[20:]}, dev.ipdev.natdev, udp, incoming)
+				destPacket, err = natExec(ipheader, natPacketHeader{packet: packet}, dev.ipdev.natdev, udp, incoming)
 				if err != nil {
 					return
 				}
 				natExecused = true
 			case IP_PROTOCOL_NUM_TCP:
-				destPacket, err = natExec(ipheader, natPacketHeader{packet: packet[20:]}, dev.ipdev.natdev, tcp, incoming)
+				destPacket, err = natExec(ipheader, natPacketHeader{packet: packet}, dev.ipdev.natdev, tcp, incoming)
 				if err != nil {
 					return
 				}
 				natExecused = true
 			case IP_PROTOCOL_NUM_ICMP:
-				destPacket, err = natExec(ipheader, natPacketHeader{packet: packet[20:]}, dev.ipdev.natdev, icmp, incoming)
+				destPacket, err = natExec(ipheader, natPacketHeader{packet: packet}, dev.ipdev.natdev, icmp, incoming)
 				if err != nil {
 					return
 				}
 				natExecused = true
 			}
 			if natExecused {
-				ipPacket := ipheader.ToPacket(false)
+				if ipheader.ttl <= 1 {
+					//todo send_icmp_time_exceeded
+					return
+				}
+				ipheader.ttl -= 1
+				ipPacket := ipheader.ToPacket(true)
 				ipPacket = append(ipPacket, destPacket...)
 				fmt.Printf("To dest is %s, checksum is %x, packet is %x\n", printIPAddr(ipheader.destAddr),
 					ipheader.headerChecksum, ipPacket)

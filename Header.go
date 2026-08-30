@@ -111,7 +111,7 @@ func (tcp tcpHeader) ParsePacket(packet []byte) tcpHeader {
 
 	if header.dataOffset < 5 || int(headerLen) > len(packet) {
 		fmt.Printf("tcp header dataOffset error %x\n", packet)
-		return tcpHeader{}
+		return tcpHeader{} // todo err
 	}
 	//オプションがあれば(60byteまで)
 	if 20 < headerLen {
